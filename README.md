@@ -1,6 +1,6 @@
 # Advanced Lane Finding 
 
-Computer Vision algorithm to compute road curvature and lane vehicle offset using OpenCV Image Processing, Camera Calibration, Perspective Transform, Color Masks and Sobels.
+Computer Vision algorithm to compute road curvature and lane vehicle offset using OpenCV Image Processing, Camera Calibration, Perspective Transform, Color Masks, Sobels and Polynomial Fit.
 
 ![GIF](output_images/advanced_lane_finding.gif)
 
@@ -145,7 +145,7 @@ hue_binary[(H > 10) & (H <= 25)] = 1
 
 
 
-##  Lane Lines Detection Using Histogram
+## Lane Lines Detection Using Histogram
 
 The lane line detection is performed on binary thresholded images that have already been undistorted and warped. Initially a histogram is computed on the image, this means that the pixels values are summed on each column to detect the most probable x position of left an right lane lines.  
 
@@ -200,3 +200,31 @@ Here, the left and right line identified pixels are marked in red and blue respe
 
 ![fit_poly](output_images/fit_poly.JPG) 
 
+
+
+## Detection of Lane Lines Based on Previous Cycle
+
+To speed up the lane line search from one video frame to the other information from the previous cycle is used.
+It is more likely that the next image will have the lane lines in the proximity of the previous lane lines. This is where the polynomial fit for the left line and right line of the previous image are used to define the searching area. 
+The sliding window method is still used but instead of starting with the histogram’s peak points, the search is conducted along the previous lines with a given margin for the window’s width. 
+
+```
+### Set the area of search based on activated x-values ###
+### within the +/- margin of our polynomial function ###
+left_lane_inds = ((nonzerox > (prev_left_fit[0]*(nonzeroy**2) + prev_left_fit[1]*nonzeroy + 
+                prev_left_fit[2] - margin)) & (nonzerox < (prev_left_fit[0]*(nonzeroy**2) + 
+                prev_left_fit[1]*nonzeroy + prev_left_fit[2] + margin))).nonzero()[0]
+right_lane_inds = ((nonzerox > (prev_right_fit[0]*(nonzeroy**2) + prev_right_fit[1]*nonzeroy + 
+                prev_right_fit[2] - margin)) & (nonzerox < (prev_right_fit[0]*(nonzeroy**2) + 
+                prev_right_fit[1]*nonzeroy + prev_right_fit[2] + margin))).nonzero()[0]
+# Again, extract left and right line pixel positions
+leftx = nonzerox[left_lane_inds]
+lefty = nonzeroy[left_lane_inds] 
+rightx = nonzerox[right_lane_inds]
+righty = nonzeroy[right_lane_inds]
+```
+
+The search returns leftx, lefty, rightx, righty pixel’s coordinates that are fitted with a second degree polynomial function for each left and right side.  
+
+
+![prev_poly](output_images/prev_poly.JPG)
