@@ -16,7 +16,7 @@ The starter code for this project is provided by Udacity and can be found [here]
 
 ## Camera Calibration
 
-[Optic distortion](https://en.wikipedia.org/wiki/Distortion_(optics)) is a physical phenomenon that occurs in image recording, in which straight lines are projected as slightly curved ones when perceived through camera lenses. The highway driving video is recorded using the front facing camera on the car and the images are distorted. The distorsion coefficients are specific to each camera and can be calculated using known geometrical forms. 
+[Optic distortion](https://en.wikipedia.org/wiki/Distortion_(optics)) is a physical phenomenon that occurs in image recording, in which straight lines are projected as slightly curved ones when perceived through camera lenses. The highway driving video is recorded using the front facing camera on the car and the images are distorted. The distortion coefficients are specific to each camera and can be calculated using known geometrical forms. 
 
 Chessboard images captured with the embedded camera are provided in `camera_cal` folder. The advantage of these images is that they have high contrast and known geometry. The images provided present 9 * 6 corners to work with. 
 
@@ -27,7 +27,7 @@ objp = np.zeros((6*9,3), np.float32)
 objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
 ```
 
-Object points are set based on the world’s knowledge that in a chess board pattern all squares are equal, this implies that object points will have x and y coordinates generated from grid indexes and z is always 0. The image points represent the corresponding object points found in the image using OpenCV’s function ‘findChessboardCorners’.  
+Object points are set based on the common understanding that in a chess board pattern, all squares are equal. This implies that object points will have x and y coordinates generated from grid indexes, and z is always 0. The image points represent the corresponding object points found in the image using OpenCV’s function `findChessboardCorners`.  
 
 ```
 # Convert to grayscale
@@ -36,7 +36,7 @@ gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
 ```
 
-After scanning through all the images, the image points list has enough data to compare against the object points in order to compute camera matrix and distortion coefficients. This leads to an accurate camera matrix and distortion coefficients identification using ‘calibrateCamera’ function.
+After scanning through all the images, the image point list has enough data to compare against the object points in order to compute camera matrix and distortion coefficients. This leads to an accurate camera matrix and distortion coefficients identification using ‘calibrateCamera’ function.
 
 ```
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
@@ -47,7 +47,7 @@ OpenCV `undistort` function is used to transform the images using the camera mat
 
 ![undistorted_chessboard](output_images/undistorted_chessboard.JPG)
 
-The result of the camera calibration technique is visible when comparing these pictures. While on the chessboard picture the distorsion is more obvious, for the road picture it's more subtile. Nevertheless,  undistorted pictured would lead to an incorrect road curvature calculation.
+The result of the camera calibration technique is visible when comparing these pictures. While on the chessboard picture the distortion is more obvious, on the road picture it's more subtle. Nevertheless,  an undistorted picture would lead to an incorrect road curvature calculation.
 
 ![undistorted_road](output_images/undistorted_road.JPG)
 
@@ -55,10 +55,9 @@ The result of the camera calibration technique is visible when comparing these p
 
 ##  Perspective Transform from Camera Angle to Bird's Eye View
 
-For road curvature calculation purposes, the ideal perspective is the bird's eye view. This means that the road is perceived from above, instead of at an angle through the vehicle's windshield.
+To calucluate curvature, the ideal perspective is a bird's eye view. This means that the road is perceived from above, instead of at an angle through the vehicle's windshield.
 
-This perspective transform is computed using a straight lane scenario and prior world knowledge that the lane lines are in fact parallel. 
-Source and destination points are identified directly from the image for the perspective transform.
+This perspective transform is computed using a straight lane scenario and prior common knowledge that the lane lines are in fact parallel.  Source and destination points are identified directly from the image for the perspective transform.
 
 ![ending_points](output_images/ending_points.JPG)
 
@@ -70,7 +69,7 @@ src = np.float32([
     (685, 447), # top-right corner
     (1125, 720) # bottom-right corner
 ])
-# Destination points are to be parallel, taken into account the image size
+# Destination points are to be parallel, taking into account the image size
 dst = np.float32([
     [offset, img_size[1]],             # bottom-left corner
     [offset, 0],                       # top-left corner
@@ -95,9 +94,9 @@ warped = cv2.warpPerspective(undist, M, img_size)
 
 ##  Process Binary Thresholded Images 
 
-The objective is to process the image in such a way that the lane line pixels are kept and easily differentiated from the road. Four transformations are applied and then combined.  
+The objective is to process the image in such a way that the lane line pixels are preserved and easily differentiated from the road. Four transformations are applied and then combined.  
 
-First is to take the x sobel on the gray scaled image. This represents the derivative in the x direction and helps detect lines that tend to be vertical. Only the values above a minimum threshold are kept.
+The first transformation takes the `x sobel` on the gray-scaled image. This represents the derivative in the x direction and helps detect lines that tend to be vertical. Only the values above a minimum threshold are kept.
 
 ```
 # Transform image to gray scale
@@ -112,7 +111,7 @@ sx_binary = np.zeros_like(scaled_sobel)
 sx_binary[(scaled_sobel >= 30) & (scaled_sobel <= 255)] = 1
 ``` 
 
-The second transformation is to select the white pixels in the gray scaled image. White is here defined by values between 200 and 255 which were picked using trial and error on the given pictures. 
+The second transformation selects the white pixels in the gray scaled image. White is defined by values between 200 and 255 which were picked using trial and error on the given pictures. 
 
 ```
 # Detect pixels that are white in the grayscale image
@@ -120,7 +119,7 @@ white_binary = np.zeros_like(gray_img)
 white_binary[(gray_img > 200) & (gray_img <= 255)] = 1
 ```
 
-Third selection is on the saturation component using the HLS colorspace. This is particularly important to detect yellow lines on light concrete road. 
+The third transformation is on the saturation component using the HLS colorspace. This is particularly important to detect yellow lines on light concrete road. 
 
 ```
 # Convert image to HLS
@@ -132,7 +131,7 @@ sat_binary = np.zeros_like(S)
 sat_binary[(S > 90) & (S <= 255)] = 1
 ```
 
-Forth selection is on the hue component with values from 10 to 25 which have been identified to be corresponding to yellow. 
+The fourth transformation is on the hue component with values from 10 to 25, which were identified as corresponding to yellow. 
 
 ```
 hue_binary =  np.zeros_like(H)
@@ -145,9 +144,9 @@ hue_binary[(H > 10) & (H <= 25)] = 1
 
 
 
-## Lane Lines Detection Using Histogram
+## Lane Line Detection Using Histogram
 
-The lane line detection is performed on binary thresholded images that have already been undistorted and warped. Initially a histogram is computed on the image, this means that the pixels values are summed on each column to detect the most probable x position of left an right lane lines.  
+The lane line detection is performed on binary thresholded images that have already been undistorted and warped. Initially a histogram is computed on the image. This means that the pixel values are summed on each column to detect the most probable x position of left and right lane lines.  
 
 ```
 # Take a histogram of the bottom half of the image
@@ -159,7 +158,7 @@ leftx_base = np.argmax(histogram[:midpoint])
 rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 ```
 
-Starting with these base positions on the bottom of the image, sliding window method is applied going upwards searching for line pixels. Lane pixels are considered when the x and y coordinates are within the area defined by the window. When enough pixels are detected to be confident they are part of a line, their average position is computed and kept as starting point for the next upward window.  
+Starting with these base positions on the bottom of the image, the sliding window method is applied going upwards searching for line pixels. Lane pixels are considered when the x and y coordinates are within the area defined by the window. When enough pixels are detected to be confident they are part of a line, their average position is computed and kept as starting point for the next upward window.  
 
 ```
 # Choose the number of sliding windows
@@ -188,7 +187,7 @@ left_lane_inds.append(good_left_inds)
 right_lane_inds.append(good_right_inds)
 ```
 
-All these pixels are put together in a list of their x and y coordinates. This is done symmetrically on the left line respectively on the right line. leftx, lefty, rightx, righty pixels positions are returned from the function and afterwards a second degree polynomial is fitted on each left and right side to find the best line fit of the selected pixels.
+All these pixels are put together in a list of their x and y coordinates. This is done symmetrically on both lane lines. `leftx`, `lefty`, `rightx`, `righty` pixel positions are returned from the function and afterwards, a second-degree polynomial is fitted on each left and right side to find the best line fit of the selected pixels.
 
 ```
 # Fit a second order polynomial to each with np.polyfit() ###
@@ -196,7 +195,7 @@ left_fit = np.polyfit(lefty, leftx, 2)
 right_fit = np.polyfit(righty, rightx, 2)   
 ```
 
-Here, the left and right line identified pixels are marked in red and blue respectively. The second degree polynomial is traced on the resulting image.
+Here, the identified left and right line pixels are marked in red and blue respectively. The second degree polynomial is traced on the resulting image.
 
 ![fit_poly](output_images/fit_poly.JPG) 
 
@@ -204,9 +203,9 @@ Here, the left and right line identified pixels are marked in red and blue respe
 
 ## Detection of Lane Lines Based on Previous Cycle
 
-To speed up the lane line search from one video frame to the other information from the previous cycle is used.
-It is more likely that the next image will have the lane lines in the proximity of the previous lane lines. This is where the polynomial fit for the left line and right line of the previous image are used to define the searching area. 
-The sliding window method is still used but instead of starting with the histogram’s peak points, the search is conducted along the previous lines with a given margin for the window’s width. 
+To speed up the lane line search from one video frame to the next, information from the previous cycle is used. It is more likely that the next image will have lane lines in proximity to the previous lane lines. This is where the polynomial fit for the left line and right line of the previous image are used to define the searching area. 
+
+The sliding window method is still used, but instead of starting with the histogram’s peak points, the search is conducted along the previous lines with a given margin for the window’s width. 
 
 ```
 ### Set the area of search based on activated x-values ###
@@ -224,7 +223,7 @@ rightx = nonzerox[right_lane_inds]
 righty = nonzeroy[right_lane_inds]
 ```
 
-The search returns leftx, lefty, rightx, righty pixel’s coordinates that are fitted with a second degree polynomial function for each left and right side.  
+The search returns `leftx`, `lefty`, `rightx`, `righty` pixel coordinates that are fitted with a second degree polynomial function for each left and right side.  
 
 
 ![prev_poly](output_images/prev_poly.JPG)
