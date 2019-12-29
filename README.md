@@ -32,6 +32,7 @@ Object points are set based on the common understanding that in a chess board pa
 ```
 # Convert to grayscale
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
 # Find the chessboard corners
 ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
 ```
@@ -69,6 +70,7 @@ src = np.float32([
     (685, 447), # top-right corner
     (1125, 720) # bottom-right corner
 ])
+
 # Destination points are to be parallel, taking into account the image size
 dst = np.float32([
     [offset, img_size[1]],             # bottom-left corner
@@ -101,12 +103,15 @@ The first transformation takes the `x sobel` on the gray-scaled image. This repr
 ```
 # Transform image to gray scale
 gray_img =cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
 # Apply sobel (derivative) in x direction, this is usefull to detect lines that tend to be vertical
 sobelx = cv2.Sobel(gray_img, cv2.CV_64F, 1, 0)
 abs_sobelx = np.absolute(sobelx)
+
 # Scale result to 0-255
 scaled_sobel = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
 sx_binary = np.zeros_like(scaled_sobel)
+
 # Keep only derivative values that are in the margin of interest
 sx_binary[(scaled_sobel >= 30) & (scaled_sobel <= 255)] = 1
 ``` 
@@ -127,6 +132,7 @@ hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 H = hls[:,:,0]
 S = hls[:,:,2]
 sat_binary = np.zeros_like(S)
+
 # Detect pixels that have a high saturation value
 sat_binary[(S > 90) & (S <= 255)] = 1
 ```
@@ -135,6 +141,7 @@ The fourth transformation is on the hue component with values from 10 to 25, whi
 
 ```
 hue_binary =  np.zeros_like(H)
+
 # Detect pixels that are yellow using the hue component
 hue_binary[(H > 10) & (H <= 25)] = 1
 ```
@@ -151,6 +158,7 @@ The lane line detection is performed on binary thresholded images that have alre
 ```
 # Take a histogram of the bottom half of the image
 histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
+
 # Find the peak of the left and right halves of the histogram
 # These will be the starting point for the left and right lines
 midpoint = np.int(histogram.shape[0]//2)
@@ -163,8 +171,10 @@ Starting with these base positions on the bottom of the image, the sliding windo
 ```
 # Choose the number of sliding windows
 nwindows = 9
+
 # Set the width of the windows +/- margin
 margin = 100
+
 # Set minimum number of pixels found to recenter window
 minpix = 50
 
@@ -208,14 +218,14 @@ To speed up the lane line search from one video frame to the next, information f
 The sliding window method is still used, but instead of starting with the histogram’s peak points, the search is conducted along the previous lines with a given margin for the window’s width. 
 
 ```
-### Set the area of search based on activated x-values ###
-### within the +/- margin of our polynomial function ###
+# Set the area of search based on activated x-values within the +/- margin of our polynomial function
 left_lane_inds = ((nonzerox > (prev_left_fit[0]*(nonzeroy**2) + prev_left_fit[1]*nonzeroy + 
                 prev_left_fit[2] - margin)) & (nonzerox < (prev_left_fit[0]*(nonzeroy**2) + 
                 prev_left_fit[1]*nonzeroy + prev_left_fit[2] + margin))).nonzero()[0]
 right_lane_inds = ((nonzerox > (prev_right_fit[0]*(nonzeroy**2) + prev_right_fit[1]*nonzeroy + 
                 prev_right_fit[2] - margin)) & (nonzerox < (prev_right_fit[0]*(nonzeroy**2) + 
                 prev_right_fit[1]*nonzeroy + prev_right_fit[2] + margin))).nonzero()[0]
+
 # Again, extract left and right line pixel positions
 leftx = nonzerox[left_lane_inds]
 lefty = nonzeroy[left_lane_inds] 
@@ -243,6 +253,7 @@ xm_per_pix = 3.7/700 # meters per pixel in x dimension
     
 left_fit_cr = np.polyfit(ploty*ym_per_pix, left_fitx*xm_per_pix, 2)
 right_fit_cr = np.polyfit(ploty*ym_per_pix, right_fitx*xm_per_pix, 2)
+
 # Define y-value where we want radius of curvature
 # We'll choose the maximum y-value, corresponding to the bottom of the image
 y_eval = np.max(ploty)
@@ -257,13 +268,17 @@ The radius of the curvature is calculated using the y point at the bottom of the
 ```
 # Define conversion in x from pixels space to meters
 xm_per_pix = 3.7/700 # meters per pixel in x dimension
+
 # Choose the y value corresponding to the bottom of the image
 y_max = binary_warped.shape[0]
+
 # Calculate left and right line positions at the bottom of the image
 left_x_pos = left_fit[0]*y_max**2 + left_fit[1]*y_max + left_fit[2]
 right_x_pos = right_fit[0]*y_max**2 + right_fit[1]*y_max + right_fit[2] 
+
 # Calculate the x position of the center of the lane 
 center_lanes_x_pos = (left_x_pos + right_x_pos)//2
+
 # Calculate the deviation between the center of the lane and the center of the picture
 # The car is assumed to be placed in the center of the picture
 # If the deviation is negative, the car is on the felt hand side of the center of the lane
