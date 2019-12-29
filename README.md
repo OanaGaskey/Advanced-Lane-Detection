@@ -13,6 +13,7 @@ This project is implemented in Python and uses OpenCV image processing library. 
 The starter code for this project is provided by Udacity and can be found [here](https://github.com/udacity/CarND-Advanced-Lane-Lines).
 
 
+
 ## Camera Calibration
 
 [Optic distortion](https://en.wikipedia.org/wiki/Distortion_(optics)) is a physical phenomenon that occurs in image recording, in which straight lines are projected as slightly curved ones when perceived through camera lenses. The highway driving video is recorded using the front facing camera on the car and the images are distorted. The distorsion coefficients are specific to each camera and can be calculated using known geometrical forms. 
@@ -20,7 +21,7 @@ The starter code for this project is provided by Udacity and can be found [here]
 Chessboard images captured with the embedded camera are provided in `camera_cal` folder. The advantage of these images is that they have high contrast and known geometry. The images provided present 9 * 6 corners to work with. 
 
 ```
-	# Object points are real world points, here a 3D coordinates matrix is generated
+# Object points are real world points, here a 3D coordinates matrix is generated
     # z coordinates are 0 and x, y are equidistant as it is known that the chessboard is made of identical squares
     objp = np.zeros((6*9,3), np.float32)
     objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
@@ -29,7 +30,7 @@ Chessboard images captured with the embedded camera are provided in `camera_cal`
 Object points are set based on the world’s knowledge that in a chess board pattern all squares are equal, this implies that object points will have x and y coordinates generated from grid indexes and z is always 0. The image points represent the corresponding object points found in the image using OpenCV’s function ‘findChessboardCorners’.  
 
 ```
-	# Convert to grayscale
+# Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Find the chessboard corners
     ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
@@ -49,6 +50,7 @@ OpenCV `undistort` function is used to transform the images using the camera mat
 The result of the camera calibration technique is visible when comparing these pictures. While on the chessboard picture the distorsion is more obvious, for the road picture it's more subtile. Nevertheless,  undistorted pictured would lead to an incorrect road curvature calculation.
 
 ![undistorted_road](output_images/undistorted_road.JPG)
+
 
 
 ##  Perspective Transform from Camera Angle to Bird's Eye View
@@ -81,13 +83,14 @@ Source and destination points are identified directly from the image for the per
 OpenCV provides perspective transform functions to calculate the transformation matrix for the images given the source and destination points. Using `warpPerspective` function, the bird's eye view perspective transform is performed.
 
 ```
-	# Calculate the transformation matrix and it's inverse transformation
+# Calculate the transformation matrix and it's inverse transformation
     M = cv2.getPerspectiveTransform(src, dst)
     M_inv = cv2.getPerspectiveTransform(dst, src)
     warped = cv2.warpPerspective(undist, M, img_size)
 ```
 
 ![warp_perspective](output_images/warp_perspective.JPG)
+
 
 
 ##  Process Binary Thresholded Images 
@@ -97,7 +100,7 @@ The objective is to process the image in such a way that the lane line pixels ar
 First is to take the x sobel on the gray scaled image. This represents the derivative in the x direction and helps detect lines that tend to be vertical. Only the values above a minimum threshold are kept.
 
 ```
-	# Transform image to gray scale
+# Transform image to gray scale
     gray_img =cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Apply sobel (derivative) in x direction, this is usefull to detect lines that tend to be vertical
     sobelx = cv2.Sobel(gray_img, cv2.CV_64F, 1, 0)
@@ -112,7 +115,7 @@ First is to take the x sobel on the gray scaled image. This represents the deriv
 The second transformation is to select the white pixels in the gray scaled image. White is here defined by values between 200 and 255 which were picked using trial and error on the given pictures. 
 
 ```
-	# Detect pixels that are white in the grayscale image
+# Detect pixels that are white in the grayscale image
     white_binary = np.zeros_like(gray_img)
     white_binary[(gray_img > 200) & (gray_img <= 255)] = 1
 ```
@@ -120,7 +123,7 @@ The second transformation is to select the white pixels in the gray scaled image
 Third selection is on the saturation component using the HLS colorspace. This is particularly important to detect yellow lines on light concrete road. 
 
 ```
-	# Convert image to HLS
+# Convert image to HLS
     hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     H = hls[:,:,0]
     S = hls[:,:,2]
@@ -132,7 +135,7 @@ Third selection is on the saturation component using the HLS colorspace. This is
 Forth selection is on the hue component with values from 10 to 25 which have been identified to be corresponding to yellow. 
 
 ```
-	hue_binary =  np.zeros_like(H)
+hue_binary =  np.zeros_like(H)
     # Detect pixels that are yellow using the hue component
     hue_binary[(H > 10) & (H <= 25)] = 1
 ```
