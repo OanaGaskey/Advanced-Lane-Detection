@@ -228,3 +228,53 @@ The search returns leftx, lefty, rightx, righty pixel’s coordinates that are f
 
 
 ![prev_poly](output_images/prev_poly.JPG)
+
+
+
+## Calculate Vehicle Position and Curve Radius
+
+To calculate the radius and the vehicle's position on the road in meters, scaling factors are needed to convert from pixels. The corresponding scaling values are 30 meters to 720 pixels in the y direction and 3.7 meters to 700 pixels in the x dimension. 
+
+A polynomial fit is used to make the conversion. Using the x coordinates of the aligned pixels from the fitted line of each right and left lane line, the conversion factors are applied and polynomial fit is performed on each. 
+
+```
+# Define conversions in x and y from pixels space to meters
+ym_per_pix = 30/720 # meters per pixel in y dimension
+xm_per_pix = 3.7/700 # meters per pixel in x dimension
+    
+left_fit_cr = np.polyfit(ploty*ym_per_pix, left_fitx*xm_per_pix, 2)
+right_fit_cr = np.polyfit(ploty*ym_per_pix, right_fitx*xm_per_pix, 2)
+# Define y-value where we want radius of curvature
+# We'll choose the maximum y-value, corresponding to the bottom of the image
+y_eval = np.max(ploty)
+    
+# Calculation of R_curve (radius of curvature)
+left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
+right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
+```
+
+The radius of the curvature is calculated using the y point at the bottom of the image. To calculate the vehicle’s position, the polynomial fit in pixels is used to determine the x position of the left and right lane corresponding to the y at the bottom of the image. 
+
+```
+# Define conversion in x from pixels space to meters
+xm_per_pix = 3.7/700 # meters per pixel in x dimension
+# Choose the y value corresponding to the bottom of the image
+y_max = binary_warped.shape[0]
+# Calculate left and right line positions at the bottom of the image
+left_x_pos = left_fit[0]*y_max**2 + left_fit[1]*y_max + left_fit[2]
+right_x_pos = right_fit[0]*y_max**2 + right_fit[1]*y_max + right_fit[2] 
+# Calculate the x position of the center of the lane 
+center_lanes_x_pos = (left_x_pos + right_x_pos)//2
+# Calculate the deviation between the center of the lane and the center of the picture
+# The car is assumed to be placed in the center of the picture
+# If the deviation is negative, the car is on the felt hand side of the center of the lane
+veh_pos = ((binary_warped.shape[1]//2) - center_lanes_x_pos) * xm_per_pix 
+```
+
+The average of these two values gives the position of the center of the lane in the image. If the lane’s center is shifted to the right by `nbp` amount of pixels that means that the car is shifted to the left by `nbp * xm_per_pix meters`. This is based on the assumption that the camera is mounted on the central axis of the vehicle. 
+
+
+
+## Video Output
+
+Check out the restulting video! You can download the video here: [project_video_output.mp4](project_video_output.mp4)
