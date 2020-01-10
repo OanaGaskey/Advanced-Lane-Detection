@@ -34,6 +34,8 @@ Object points are set based on the common understanding that in a chess board pa
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 # Find the chessboard corners
+nx = 9
+ny = 6
 ret, corners = cv2.findChessboardCorners(gray, (nx, ny), None)
 ```
 
